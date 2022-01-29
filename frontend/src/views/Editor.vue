@@ -108,19 +108,23 @@ export default class Editor extends Vue {
 
 	public onDrop (event : DragEvent) {
 
-		var offsetX = event.offsetX;
-		var offsetY = event.offsetY;
+		const enumValue = +event.dataTransfer!.getData('nodetypeenum') as NodeTypeEnum;
 
 		if((event.target as any).classList.contains("drawflow"))//if we drop on the drawflow
 		{
-			offsetX += this.editor.canvas_x;
-			offsetY += this.editor.canvas_y;
+			this.addNodeToDrawFlow(enumValue, event.offsetX, event.offsetY);
 		}
+		else//If we drop on the parent
+		{
+			const parentPos = this.editorElement.getBoundingClientRect();
+			const childPos = this.editorElement.querySelector(".drawflow")!.getBoundingClientRect();
+			let childPosRelativeToParent = {left : 0, top : 0};
 
-		const enumValue = +event.dataTransfer!.getData('nodetypeenum') as NodeTypeEnum;
-		const pos_x = offsetX * ( this.editorElement.clientWidth / (this.editorElement.clientWidth * this.editor.zoom)) - (this.editor.canvas_x * ( this.editorElement.clientWidth / (this.editorElement.clientWidth * this.editor.zoom)));
-		const pos_y = offsetY * ( this.editorElement.clientHeight / (this.editorElement.clientHeight * this.editor.zoom)) - (this.editor.canvas_y * ( this.editorElement.clientHeight / (this.editorElement.clientHeight * this.editor.zoom)));		
-		this.addNodeToDrawFlow(enumValue, pos_x, pos_y);
+			childPosRelativeToParent.top = childPos.top - parentPos.top,
+			childPosRelativeToParent.left = childPos.left - parentPos.left;
+
+			this.addNodeToDrawFlow(enumValue, (event.offsetX - childPosRelativeToParent.left) / this.editor.zoom, (event.offsetY - childPosRelativeToParent.top) / this.editor.zoom);
+		}
 	}
 
 	public addNodeToDrawFlow(nodeType : NodeTypeEnum, posX : number, posY : number)
