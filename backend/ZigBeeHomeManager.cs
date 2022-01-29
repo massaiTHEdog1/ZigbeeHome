@@ -29,9 +29,9 @@ namespace ZigbeeHome
 		private bool _enableLog = true;
         public ZigBeeNetworkManager? NetworkManager;
 		public IHubContext<MainHub> HubContext;
-		private ZigBeeNode? _coordinator;
+        private ZigBeeNode? _coordinator;
 		public ZigBeeDiscoveryExtension DiscoveryExtension;
-		public ConcurrentBag<DeviceDto> Devices = new ConcurrentBag<DeviceDto>();
+		public ConcurrentDictionary<ulong, DeviceDto> Devices = new ConcurrentDictionary<ulong, DeviceDto>();
 
 		/// <summary>
 		/// Dictionnary containing the variables of the drawflow.<br/>
@@ -67,10 +67,25 @@ namespace ZigbeeHome
         public ManagerStateEnum State { get; set; } = ManagerStateEnum.STOPPED;
 		public bool PermitJoin { get; set; } = false;
 
+        public async Task<bool> DeleteDeviceAsync(ulong ieeeAddress)
+        {
+			if (State != ManagerStateEnum.RUNNING)
+				return false;
+
+			NetworkManager!.RemoveNode(NetworkManager.GetNode(new IeeeAddress(ieeeAddress)));
+
+			return true;
+        }
+
+		public IEnumerable<DeviceDto> GetDevices()
+		{
+			return Devices.Select(x => x.Value);
+		}
+
 		/// <summary>
 		/// Init the manager
 		/// </summary>
-        public async Task InitAsync()
+		public async Task InitAsync()
         {
 			if (State != ManagerStateEnum.STOPPED)
 				return;
@@ -86,12 +101,12 @@ namespace ZigbeeHome
 
 				var dataStore = new JsonNetworkDataStore("devices");
 
-				Devices = new ConcurrentBag<DeviceDto>();
+				Devices = new ConcurrentDictionary<ulong, DeviceDto>();
 				var labels = GetNodesLabels();
 				foreach (var node in dataStore.ReadNetworkNodes().Select(x => dataStore.ReadNode(x)).Where(x => x.NetworkAddress != 0))
 				{
 					var deviceLabel = labels.GetValueOrDefault(node.IeeeAddress.Value.ToString()) ?? $"Device {node.IeeeAddress}";
-					Devices.Add(new DeviceDto(node, deviceLabel));
+					Devices.TryAdd(node.IeeeAddress.Value, new DeviceDto(node, deviceLabel));
 				}
 
 				NetworkManager.SetNetworkDataStore(dataStore);				
@@ -179,7 +194,7 @@ namespace ZigbeeHome
         /// </summary>
         public async Task<bool> SetPermitJoinAsync(bool permitJoin)
         {
-			if (State != ManagerStateEnum.RUNNING || PermitJoin == permitJoin || Devices.Any(x => x.IsSynchronizing))
+			if (State != ManagerStateEnum.RUNNING || PermitJoin == permitJoin || Devices.Any(x => x.Value.IsSynchronizing))
 				return false;
 
 			if (permitJoin)
@@ -338,7 +353,7 @@ namespace ZigbeeHome
 
 		public async void NodeAdded(ZigBeeNode node)
 		{
-			if(node.NetworkAddress != 0 && !_zigBeeHomeManager.Devices.Any(x => x.IeeeAddress == node.IeeeAddress.Value))
+			if(node.NetworkAddress != 0 && !_zigBeeHomeManager.GetDevices().Any(x => x.IeeeAddress == node.IeeeAddress.Value))
             {
 				var nodeLabel = "Device " + node.IeeeAddress.Value.ToString();
 				var labels = _zigBeeHomeManager.GetNodesLabels();
@@ -354,7 +369,7 @@ namespace ZigbeeHome
 				}
 
 				var deviceDto = new DeviceDto(node, nodeLabel);
-				_zigBeeHomeManager.Devices.Add(deviceDto);
+				_zigBeeHomeManager.Devices.TryAdd(deviceDto.IeeeAddress, deviceDto);
 				deviceDto.IsSynchronizing = true;
 				await _hubContext.Clients.All.SendAsync("newDeviceReceived", deviceDto);
 
@@ -382,12 +397,14 @@ namespace ZigbeeHome
 
 		public async void NodeRemoved(ZigBeeNode node)
 		{
-			await _hubContext.Clients.All.SendAsync("devicesReceived", _zigBeeHomeManager.Devices);
+			DeviceDto deletedDto = null;
+			_zigBeeHomeManager.Devices.TryRemove(node.IeeeAddress.Value, out deletedDto);
+			await _hubContext.Clients.All.SendAsync("devicesReceived", _zigBeeHomeManager.GetDevices());
 		}
 
 		public async void NodeUpdated(ZigBeeNode node)
 		{
-			await _hubContext.Clients.All.SendAsync("devicesReceived", _zigBeeHomeManager.Devices);
+			await _hubContext.Clients.All.SendAsync("devicesReceived", _zigBeeHomeManager.GetDevices());
 		}
 	}
 

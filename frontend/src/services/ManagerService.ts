@@ -41,6 +41,10 @@ export default class ManagerService {
 			device.isSynchronizing = false;
 			EventBus.$emit("addSuccessToast", `Device synchronized : '${device.label}'`, false);
 		});
+
+		this.connection.on("deviceDeleted", () => {
+			EventBus.$emit("addSuccessToast", `Device deleted.`);
+		});
 	}
 
 	private async onConnectionClosed(self : ManagerService) : Promise<void>{

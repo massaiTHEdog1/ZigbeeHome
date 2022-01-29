@@ -28,7 +28,7 @@ namespace ZigbeeHome.Hubs
 
         public async Task GetDevices()
         {
-            await Clients.Caller.SendAsync("devicesReceived", _zigBeeHomeManager.Devices);
+            await Clients.Caller.SendAsync("devicesReceived", _zigBeeHomeManager.GetDevices());
         }
 
         public async Task GetPermitJoin()
@@ -59,6 +59,14 @@ namespace ZigbeeHome.Hubs
         {
             await _zigBeeHomeManager.SaveDrawflowAsync(json);
             await Clients.Others.SendAsync("drawflowReceived", json);
+        }
+
+        public async Task DeleteDevice(ulong ieeeAddress)
+        {
+            if(await _zigBeeHomeManager.DeleteDeviceAsync(ieeeAddress))
+            {
+                await Clients.Caller.SendAsync("deviceDeleted");
+            }
         }
     }
 }

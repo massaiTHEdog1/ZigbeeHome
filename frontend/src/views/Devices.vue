@@ -7,15 +7,23 @@
 
 		<b-container>
 			<b-row cols="3">
-				<b-card v-for="(device, index) in Manager.devices" :key="device.ieeeAddress">
-					<!-- <font-awesome-icon icon="edit" size="sm" /> -->
-					<div v-if="device.isSynchronizing">
-						<p class="mb-1 d-inline-block mr-1 text-info">Synchronizing </p><b-spinner small variant="info" type="grow"></b-spinner>
-					</div>
-					<p role="button" class="text-truncate mb-3" :title="device.label" v-show="!device.editing" @click="edit(device, index)">{{device.label}}</p>
-					<input ref="input" type="text" class="w-100 mb-3" v-model="device.editText" v-show="device.editing" @blur="blur(device)" @keyup.enter="blur(device)"/>
-					<p class="mb-0">Network address : {{device.networkAddress}}</p>
-					<p class="mb-0">Ieee address : {{device.ieeeAddress}}</p>
+				<b-card v-for="(device, index) in Manager.devices" :key="device.ieeeAddress" class="p-1" no-body>
+					<b-card-body class="m-0 pb-0">
+						<!-- <font-awesome-icon icon="edit" size="sm" /> -->
+						<div v-if="device.isSynchronizing">
+							<p class="mb-1 d-inline-block mr-1 text-info">Synchronizing </p><b-spinner small variant="info" type="grow"></b-spinner>
+						</div>
+						<p role="button" class="text-truncate mb-3" :title="device.label" v-show="!device.editing" @click="edit(device, index)">{{device.label}}</p>
+						<input ref="input" type="text" class="w-100 mb-3" v-model="device.editText" v-show="device.editing" @blur="blur(device)" @keyup.enter="blur(device)"/>
+						<p class="mb-0">Network address : {{device.networkAddress}}</p>
+						<p class="mb-0">Ieee address : {{device.ieeeAddress}}</p>
+						
+					</b-card-body>
+					<b-card-footer class="p-2">
+						<b-button variant="danger" size="sm" class="d-block ml-auto" @click="deleteDevice(device)">
+							<b-icon icon="trash"></b-icon> Delete
+						</b-button>
+					</b-card-footer>
 				</b-card>
 			</b-row>
 		</b-container>
@@ -96,6 +104,11 @@ export default class Devices extends Vue {
 		device.editing = false;
 	}
 
+	public async deleteDevice(device : Device)
+	{
+		await Manager.connection!.send("DeleteDevice", device.ieeeAddress);
+	}
+
 	isEmpty(text: string): boolean {
 		return text === null || text.match(/^ *$/) !== null;
 	}
@@ -104,6 +117,9 @@ export default class Devices extends Vue {
 
 <style lang="scss">
 	.card{
+		background-color: transparent;
+	}
+	.card-body, .card-footer{
 		background-color: #1C1C1C;
 	}
 </style>
