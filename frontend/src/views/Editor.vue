@@ -87,10 +87,18 @@ export default class Editor extends Vue {
 		this.editor.on("moduleRemoved", this.saveEditor);
 
 		Manager.connection!.on("drawflowReceived", (json : string) => {
-			this.editor.import(JSON.parse(json));
+
+			if(!this.isEmpty(json))
+			{
+				this.editor.import(JSON.parse(json));
+			}
 		});
 
 		Manager.connection!.send("GetDrawflow");
+	}
+
+	isEmpty(text: string): boolean {
+		return text === null || text.match(/^ *$/) !== null;
 	}
 
 	public async saveEditor()

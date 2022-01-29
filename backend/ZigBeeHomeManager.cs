@@ -99,7 +99,7 @@ namespace ZigbeeHome
 
 				NetworkManager = new ZigBeeNetworkManager(dongle);
 
-				var dataStore = new JsonNetworkDataStore("devices");
+				var dataStore = new JsonNetworkDataStore("data\\devices");
 
 				Devices = new ConcurrentDictionary<ulong, DeviceDto>();
 				var labels = GetNodesLabels();
@@ -157,6 +157,10 @@ namespace ZigbeeHome
 			DrawflowVariables = new Dictionary<string, string>();
 
 			var drawflow = GetDrawflowAsObject(await GetDrawflowAsStringAsync());
+
+			if (drawflow == null)
+				return;
+
 			var startupNodes = drawflow.GetNodes().Where(x => x.name == NodeTypeEnum.ON_STARTUP);
 
 			foreach (var node in startupNodes)
@@ -168,13 +172,13 @@ namespace ZigbeeHome
 
         public async Task SaveDrawflowAsync(string json)
         {
-			File.WriteAllText("drawflow.json", json);
+			File.WriteAllText("data\\drawflow.json", json);
 		}
 
         public async Task<string> GetDrawflowAsStringAsync()
         {
-			if (File.Exists("drawflow.json"))
-				return File.ReadAllText("drawflow.json");
+			if (File.Exists("data\\drawflow.json"))
+				return File.ReadAllText("data\\drawflow.json");
 
 			return null;
 		}
@@ -227,8 +231,8 @@ namespace ZigbeeHome
 		/// </summary>
 		public Dictionary<string, string> GetNodesLabels()
         {
-			if (File.Exists("labels.json"))
-				return JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText("labels.json"));
+			if (File.Exists("data\\labels.json"))
+				return JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText("data\\labels.json"));
 
 			return new Dictionary<string, string>();
 		}
@@ -240,7 +244,7 @@ namespace ZigbeeHome
         {
 			string json = JsonConvert.SerializeObject(dictionnary, Formatting.Indented);
 
-			File.WriteAllText("labels.json", json);
+			File.WriteAllText("data\\labels.json", json);
 
 		}
 
@@ -257,6 +261,9 @@ namespace ZigbeeHome
 		/// </summary>
 		public Drawflow GetDrawflowAsObject(string json)
         {
+			if (string.IsNullOrWhiteSpace(json))
+				return null;
+
 			var root = JObject.Parse(json);
 
 			var drawflow = new Drawflow()
