@@ -6,7 +6,7 @@
 		<h4 class="mt-3">List of devices</h4>
 
 		<b-container>
-			<b-row cols="3">
+			<b-row cols="2" cols-md="3">
 				<b-card v-for="(device, index) in Manager.devices" :key="device.ieeeAddress" class="p-1" no-body>
 					<b-card-body class="m-0 pb-0">
 						<!-- <font-awesome-icon icon="edit" size="sm" /> -->

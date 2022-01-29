@@ -22,7 +22,7 @@
 				</draggable-parent-group>
 			</b-col>
 			<b-col class="h-100 p-0">
-				<div ref="editor" style="height: 100%;" @drop="onDrop" @dragover="dragover($event)" @dragenter.prevent></div>
+				<div ref="editor" style="height: 100%;" @drop="onDrop" @dragover="dragover($event)" @dragenter.prevent @wheel="onWheel"></div>
 			</b-col>
 		</b-row>
 	</b-container>
@@ -161,6 +161,18 @@ export default class Editor extends Vue {
 				throw new Error(`Node '${NodeTypeEnum[nodeType]}' not implemented !`);
 		}
 		
+	}
+
+	public onWheel(event : WheelEvent)
+	{
+		if(event.deltaY > 0)
+		{
+			this.editor.zoom_out();	
+		}
+		else if(event.deltaY < 0)
+		{
+			this.editor.zoom_in();
+		}
 	}
 }
 </script>
