@@ -1,0 +1,16 @@
+﻿namespace ZigbeeHome.Enums
+{
+    public enum NodeTypeEnum
+    {
+		SET_VARIABLE = 0,
+		CONDITION = 1,
+		ON_STARTUP = 2,
+		ON_REPORT_ATTRIBUTES_COMMAND_RECEIVED = 3,
+		ON_COMMAND = 4,
+		OFF_COMMAND = 5,
+		MOVE_TO_LEVEL_COMMAND = 6,
+		MOVE_TO_COLOR_COMMAND = 7,
+		WAIT_COMMAND = 8,
+		MANUAL_TRIGGER = 9,
+    }
+}
