@@ -7,6 +7,7 @@ export default class ManagerService {
 	state : ManagerStateEnum | null = null;
 	connection : HubConnection | null = null;
 	devices : Array<Device> = [];
+	connectionPromise : Promise<void> | null = null;
 	//devices : Array<Device> = [ new Device({ieeeAddress: 12, networkAddress: 1, label: "Button"}), new Device({ieeeAddress: 87, networkAddress: 2, label: "Light"})];
 
 	constructor()
@@ -47,22 +48,22 @@ export default class ManagerService {
 	}
 
 	/** Connect to the server */
-	public async connect() : Promise<void> {
-		// new Promise(async (resolve, reject) => {
-		// 	setTimeout(() => {
-		// 		resolve('foo');
-		// 	}, 300);
-		// });
+	public startConnectionToServer() {
+		this.connectionPromise = new Promise((resolve, reject) => {
+			(async() => {
+				try{
+					await this.connection?.start();
+					await this.connection?.send("GetState");
+					await this.connection?.send("GetDevices");
+				}
+				catch(e)
+				{
+					EventBus.$emit("addAlertToast", `Can't connect to the server.`);	
+				}
 
-		try{
-			await this.connection?.start();
-			await this.connection?.send("GetState");
-			await this.connection?.send("GetDevices");
-		}
-		catch(e)
-		{
-			EventBus.$emit("addAlertToast", `Can't connect to the server.`);
-		}
+				resolve();
+			})()
+		});
 	}
 
 	public async startManager() : Promise<void> {

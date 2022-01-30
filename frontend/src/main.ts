@@ -25,6 +25,7 @@ Vue.use(IconsPlugin);
 
 export const EventBus = new Vue();
 export const Manager = new ManagerService();
+Manager.startConnectionToServer();
 
 new Vue({
   router,

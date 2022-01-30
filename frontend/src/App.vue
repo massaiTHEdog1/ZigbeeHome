@@ -15,7 +15,7 @@
 				<b-navbar-nav class="ml-auto">
 					<b-nav-text>
 						<div class="state border-light" :style="{ 'background-color' : stateColor }"></div> {{ stateText }}
-						<b-button size="sm" class="ml-1" v-show="Manager.connection === null || Manager.connection.state === HubConnectionState.Disconnected" @click="Manager.connect()">Reconnect</b-button>
+						<b-button size="sm" class="ml-1" v-show="Manager.connection === null || Manager.connection.state === HubConnectionState.Disconnected" @click="Manager.startConnectionToServer()">Reconnect</b-button>
 						<b-spinner small v-show="Manager.connection !== null && (Manager.connection.state === HubConnectionState.Connecting || Manager.connection.state === HubConnectionState.Reconnecting)"></b-spinner>
 						<b-button size="sm" variant="info" class="ml-1" v-show="Manager.state === ManagerStateEnum.STOPPED" @click="Manager.startManager()">Start</b-button>
 						<b-button size="sm" variant="danger" class="ml-1" v-show="Manager.state === ManagerStateEnum.RUNNING" @click="Manager.reinitializeDrawflow()">Reinitialize</b-button>
@@ -56,8 +56,6 @@ export default class App extends Vue {
 	{
 		EventBus.$on("addAlertToast", this.addAlertToast);
 		EventBus.$on("addSuccessToast", this.addSuccessToast);
-
-		await Manager.connect();
 	}
 
 	async addAlertToast(text : string)

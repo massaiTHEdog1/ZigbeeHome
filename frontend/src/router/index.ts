@@ -18,10 +18,13 @@ const routes: Array<RouteConfig> = [
 		path: '/editor',
 		name: 'Editor',
 		component: () => import("../views/Editor.vue"),
-		beforeEnter: (to, from, next) => {
+		beforeEnter: async (to, from, next) => {
+			document.title = "Editor - ZigbeeHome";
+
+			await Manager.connectionPromise;
+
 			if(Manager.connection?.state === HubConnectionState.Connected)
 			{
-				document.title = "Editor - ZigbeeHome";
 				next();
 			}
 			else
@@ -34,10 +37,13 @@ const routes: Array<RouteConfig> = [
 		path: '/devices',
 		name: 'Devices',
 		component: () => import("../views/Devices.vue"),
-		beforeEnter: (to, from, next) => {
+		beforeEnter: async (to, from, next) => {
+			document.title = "Devices - ZigbeeHome";
+			
+			await Manager.connectionPromise;
+
 			if(Manager.connection?.state === HubConnectionState.Connected)
 			{
-				document.title = "Devices - ZigbeeHome";
 				next();
 			}
 			else
