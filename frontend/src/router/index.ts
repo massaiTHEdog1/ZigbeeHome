@@ -9,7 +9,10 @@ const routes: Array<RouteConfig> = [
 	{
 		path: '/',
 		name: 'Index',
-		//component: () => import("../views/Editor.vue"),
+		beforeEnter: (to, from, next) => {
+			document.title = "Home - ZigbeeHome";
+			next();
+		}
 	},
 	{
 		path: '/editor',
@@ -18,11 +21,12 @@ const routes: Array<RouteConfig> = [
 		beforeEnter: (to, from, next) => {
 			if(Manager.connection?.state === HubConnectionState.Connected)
 			{
+				document.title = "Editor - ZigbeeHome";
 				next();
 			}
 			else
 			{
-				next(false);
+				next('/');
 			}
 		}
 	},
@@ -33,11 +37,12 @@ const routes: Array<RouteConfig> = [
 		beforeEnter: (to, from, next) => {
 			if(Manager.connection?.state === HubConnectionState.Connected)
 			{
+				document.title = "Devices - ZigbeeHome";
 				next();
 			}
 			else
 			{
-				next(false);
+				next('/');
 			}
 		}
 	},
