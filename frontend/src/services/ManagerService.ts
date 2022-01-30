@@ -19,11 +19,6 @@ export default class ManagerService {
 
 		this.connection.on("stateReceived", async (state: ManagerStateEnum) => {
 			this.state = state;
-
-			if(state === ManagerStateEnum.RUNNING)
-			{
-				await this.connection?.send("GetDevices");
-			}
 		});
 
 		this.connection.on("devicesReceived", (devices: Array<Device>) => {
@@ -52,13 +47,21 @@ export default class ManagerService {
 	}
 
 	/** Connect to the server */
-	public async connect() : Promise<void> {		
+	public async connect() : Promise<void> {
+		// new Promise(async (resolve, reject) => {
+		// 	setTimeout(() => {
+		// 		resolve('foo');
+		// 	}, 300);
+		// });
+
 		try{
 			await this.connection?.start();
 			await this.connection?.send("GetState");
+			await this.connection?.send("GetDevices");
 		}
 		catch(e)
 		{
+			EventBus.$emit("addAlertToast", `Can't connect to the server.`);
 		}
 	}
 

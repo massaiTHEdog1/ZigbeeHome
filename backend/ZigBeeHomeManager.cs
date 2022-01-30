@@ -31,7 +31,8 @@ namespace ZigbeeHome
 		public IHubContext<MainHub> HubContext;
         private ZigBeeNode? _coordinator;
 		public ZigBeeDiscoveryExtension DiscoveryExtension;
-		public ConcurrentDictionary<ulong, DeviceDto> Devices = new ConcurrentDictionary<ulong, DeviceDto>();
+        private JsonNetworkDataStore _dataStore;
+        public ConcurrentDictionary<ulong, DeviceDto> Devices = new ConcurrentDictionary<ulong, DeviceDto>();
 
 		/// <summary>
 		/// Dictionnary containing the variables of the drawflow.<br/>
@@ -67,12 +68,22 @@ namespace ZigbeeHome
         public ManagerStateEnum State { get; set; } = ManagerStateEnum.STOPPED;
 		public bool PermitJoin { get; set; } = false;
 
+		/// <summary>
+		/// Delete a device.
+		/// </summary>
         public async Task<bool> DeleteDeviceAsync(ulong ieeeAddress)
         {
-			if (State != ManagerStateEnum.RUNNING)
+			if (State == ManagerStateEnum.INITIALIZING)
 				return false;
 
-			NetworkManager!.RemoveNode(NetworkManager.GetNode(new IeeeAddress(ieeeAddress)));
+			if (State == ManagerStateEnum.RUNNING)
+			{
+				NetworkManager!.RemoveNode(NetworkManager.GetNode(new IeeeAddress(ieeeAddress)));
+			}
+			else if(State == ManagerStateEnum.STOPPED)
+            {
+				await RemoveNodeAsync(ieeeAddress);
+			}
 
 			return true;
         }
@@ -94,22 +105,25 @@ namespace ZigbeeHome
 			{
 				await SetManagerStateAsync(ManagerStateEnum.INITIALIZING);
 
+				if (_dataStore == null)
+				{
+					_dataStore = new JsonNetworkDataStore("data\\devices");
+
+					Devices = new ConcurrentDictionary<ulong, DeviceDto>();
+					var labels = GetNodesLabels();
+					foreach (var node in _dataStore.ReadNetworkNodes().Select(x => _dataStore.ReadNode(x)).Where(x => x.NetworkAddress != 0))
+					{
+						var deviceLabel = labels.GetValueOrDefault(node.IeeeAddress.Value.ToString()) ?? $"Device {node.IeeeAddress}";
+						Devices.TryAdd(node.IeeeAddress.Value, new DeviceDto(node, deviceLabel));
+					}
+				}
+
 				var zigbeePort = new ZigBeeSerialPort("COM3");
 				var dongle = new ZigBeeDongleTiCc2531(zigbeePort);
 
 				NetworkManager = new ZigBeeNetworkManager(dongle);
 
-				var dataStore = new JsonNetworkDataStore("data\\devices");
-
-				Devices = new ConcurrentDictionary<ulong, DeviceDto>();
-				var labels = GetNodesLabels();
-				foreach (var node in dataStore.ReadNetworkNodes().Select(x => dataStore.ReadNode(x)).Where(x => x.NetworkAddress != 0))
-				{
-					var deviceLabel = labels.GetValueOrDefault(node.IeeeAddress.Value.ToString()) ?? $"Device {node.IeeeAddress}";
-					Devices.TryAdd(node.IeeeAddress.Value, new DeviceDto(node, deviceLabel));
-				}
-
-				NetworkManager.SetNetworkDataStore(dataStore);				
+				NetworkManager.SetNetworkDataStore(_dataStore);				
 
 				NetworkManager.AddNetworkNodeListener(new NodeListener(HubContext, this));
 
@@ -344,6 +358,17 @@ namespace ZigbeeHome
 			else
 				DrawflowVariables.Add(key, value);
 		}
+
+		/// <summary>
+		/// Remove a node from the Devices list and from the datastore.
+		/// </summary>
+        public async Task RemoveNodeAsync(ulong ieeeAddress)
+        {
+			DeviceDto deletedDto = null;
+			Devices.TryRemove(ieeeAddress, out deletedDto);
+			_dataStore.RemoveNode(new IeeeAddress(ieeeAddress));
+			await HubContext.Clients.All.SendAsync("devicesReceived", GetDevices());
+		}
     }
 
 	public class NodeListener : IZigBeeNetworkNodeListener
@@ -404,9 +429,7 @@ namespace ZigbeeHome
 
 		public async void NodeRemoved(ZigBeeNode node)
 		{
-			DeviceDto deletedDto = null;
-			_zigBeeHomeManager.Devices.TryRemove(node.IeeeAddress.Value, out deletedDto);
-			await _hubContext.Clients.All.SendAsync("devicesReceived", _zigBeeHomeManager.GetDevices());
+			await _zigBeeHomeManager.RemoveNodeAsync(node.IeeeAddress.Value);
 		}
 
 		public async void NodeUpdated(ZigBeeNode node)
