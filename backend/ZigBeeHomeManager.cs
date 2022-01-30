@@ -76,11 +76,11 @@ namespace ZigbeeHome
 			if (State == ManagerStateEnum.INITIALIZING)
 				return false;
 
-			if (State == ManagerStateEnum.RUNNING)
+			if (State == ManagerStateEnum.RUNNING)//If the network manager is started, let it handle the deletion
 			{
 				NetworkManager!.RemoveNode(NetworkManager.GetNode(new IeeeAddress(ieeeAddress)));
 			}
-			else if(State == ManagerStateEnum.STOPPED)
+			else if(State == ManagerStateEnum.STOPPED)//Manually remove the node
             {
 				await RemoveNodeAsync(ieeeAddress);
 			}
