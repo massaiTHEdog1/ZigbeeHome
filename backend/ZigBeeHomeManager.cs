@@ -207,6 +207,11 @@ namespace ZigbeeHome
 
 			var labels = GetNodesLabels();
 			labels[ieeeAddress.ToString()] = label;
+
+			var device = Devices.GetValueOrDefault(ieeeAddress);
+			if(device != null)
+				device.Label = label;
+			
 			SetNodesLabels(labels);
 		}
 
