@@ -26,9 +26,11 @@ namespace ZigbeeHome
 {
     public class ZigBeeHomeManager
     {
-		private bool _enableLog = true;
         public ZigBeeNetworkManager? NetworkManager;
-		public IHubContext<MainHub> HubContext;
+
+        public IConfiguration Configuration { get; }
+
+        public IHubContext<MainHub> HubContext;
         private ZigBeeNode? _coordinator;
 		public ZigBeeDiscoveryExtension DiscoveryExtension;
         private JsonNetworkDataStore _dataStore;
@@ -41,11 +43,12 @@ namespace ZigbeeHome
 		/// </summary>
 		public Dictionary<string, string> DrawflowVariables { get; set; } = new Dictionary<string, string>();
 
-		public ZigBeeHomeManager(IHubContext<MainHub> hubContext)
+		public ZigBeeHomeManager(IConfiguration configuration, IHubContext<MainHub> hubContext)
         {
+			Configuration = configuration;
 			HubContext = hubContext;
 
-			if(_enableLog)
+			if(Configuration.GetValue<bool>("AppSettings:Output_ZigBeeNet_logs_to_console"))
             {
 				ILoggerFactory _factory = LoggerFactory.Create(builder =>
 				{
@@ -118,7 +121,7 @@ namespace ZigbeeHome
 					}
 				}
 
-				var zigbeePort = new ZigBeeSerialPort("COM3");
+				var zigbeePort = new ZigBeeSerialPort($"COM{Configuration["AppSettings:COM_Port"]}");
 				var dongle = new ZigBeeDongleTiCc2531(zigbeePort);
 
 				NetworkManager = new ZigBeeNetworkManager(dongle);

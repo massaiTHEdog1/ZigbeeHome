@@ -26,7 +26,7 @@ namespace ZigbeeHome
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials()
-                    .WithOrigins("https://localhost:5001", "http://localhost:8080");
+                    .WithOrigins(Configuration["CORSOrigins"].Split(";"));
                 });
             });
             //services.AddMvc(option => option.EnableEndpointRouting = false);
